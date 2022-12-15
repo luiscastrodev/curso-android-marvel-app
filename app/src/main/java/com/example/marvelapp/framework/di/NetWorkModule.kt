@@ -1,5 +1,6 @@
 package com.example.marvelapp.framework.di
 
+import com.example.core.data.network.interceptor.AuthorizationInterceptor
 import com.example.marvelapp.BuildConfig
 import dagger.Module
 import dagger.Provides
@@ -9,11 +10,14 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 @Module
 @InstallIn(SingletonComponent::class)
 object NetWorkModule {
+
+    private  const val TIMEOUT_SECONDS = 15L
 
     @Provides
     fun provideLoggingInterceptor(): HttpLoggingInterceptor {
@@ -29,18 +33,29 @@ object NetWorkModule {
     }
 
     @Provides
+    fun provideAuthorizationInterceptor(): AuthorizationInterceptor {
+        return AuthorizationInterceptor(
+            publicKey = BuildConfig.PUBLIC_KEY,
+            privateKey = BuildConfig.PRIVATE_SECRET,
+            calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+        )
+    }
+
+    @Provides
     fun provideOKHttpClient(
         loggingInterceptor: HttpLoggingInterceptor,
+        authorizationInterceptor: AuthorizationInterceptor
     ): OkHttpClient {
         return OkHttpClient.Builder()
             .addInterceptor(loggingInterceptor)
-            .readTimeout(15, TimeUnit.SECONDS)
-            .connectTimeout(15, TimeUnit.SECONDS)
+            .addInterceptor(authorizationInterceptor)
+            .readTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .connectTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .build()
     }
 
     @Provides
-    fun provideGsonConverterFactory():GsonConverterFactory{
+    fun provideGsonConverterFactory(): GsonConverterFactory {
         return GsonConverterFactory.create()
     }
 
@@ -55,4 +70,5 @@ object NetWorkModule {
             .addConverterFactory(converterFactory)
             .build()
     }
+
 }
