@@ -1,5 +1,4 @@
 package com.example.marvelapp.framework.di
-
 import com.example.core.data.repository.CharactersRemoteteDataSource
 import com.example.core.data.repository.CharactersRepository
 import com.example.marvelapp.framework.CharactersRepositoryImpl
