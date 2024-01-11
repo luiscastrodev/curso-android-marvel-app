@@ -7,8 +7,9 @@ import com.example.core.data.repository.CharactersRepository
 import com.example.core.domain.model.Character
 import com.example.core.usecase.base.PagingUseCase
 import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
 
-class GetCharactersUseCase(private val charactersRepository: CharactersRepository) :
+class GetCharactersUseCase @Inject constructor(private val charactersRepository: CharactersRepository) :
     PagingUseCase<GetCharactersParams, Character>() {
     override fun createFlowObservable(params: GetCharactersParams): Flow<PagingData<Character>> {
         return Pager(config = params.pagingConfig) {
@@ -17,4 +18,7 @@ class GetCharactersUseCase(private val charactersRepository: CharactersRepositor
     }
 }
 
-data class GetCharactersParams(val query: String, val pagingConfig: PagingConfig)
+data class GetCharactersParams(
+    val query: String,
+    val pagingConfig: PagingConfig
+)
