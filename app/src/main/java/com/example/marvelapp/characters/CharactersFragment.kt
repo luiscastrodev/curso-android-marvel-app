@@ -8,7 +8,9 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.paging.LoadState
 import com.example.core.domain.model.Character
 import com.example.marvelapp.R
@@ -23,7 +25,7 @@ class CharactersFragment : Fragment() {
 
     private var _binding: FragmentCharactersBinding? = null
     private val binding get() = _binding!!
-    private val charactersAdapter = CharactersAdapter()
+    private lateinit var charactersAdapter: CharactersAdapter
     private val viewModel: CharactersViewModel by viewModels()
 
     override fun onCreateView(
@@ -37,22 +39,32 @@ class CharactersFragment : Fragment() {
         _binding = this
     }.root
 
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         initCharactersAdapter()
         observeInitialLoadState()
+
+        //USAR assim para que nao fique coletando quando estiver em background
         lifecycleScope.launch {
-            viewModel.charactersPagingData("").collect {
-                charactersAdapter.submitData(it)
+            viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.charactersPagingData("").collect {
+                    charactersAdapter.submitData(it)
+                }
             }
         }
     }
 
     private fun initCharactersAdapter() {
+        charactersAdapter = CharactersAdapter()
         with(binding.recyclerCharacters) {
+            scrollToPosition(0)
             setHasFixedSize(true)
             adapter = charactersAdapter
+                .withLoadStateFooter(
+                    footer = CharactersLoadStateAdapter(
+                        charactersAdapter::retry
+                    )
+                )
         }
     }
 
@@ -70,7 +82,13 @@ class CharactersFragment : Fragment() {
                         FLIPPER_CHILD_CHARACTERS
                     }
 
-                    is LoadState.Error -> FLIPPER_CHILD_ERROR
+                    is LoadState.Error -> {
+                        setShimmerVisibility(false)
+                        binding.includeViewCharacterError.buttonRetry.setOnClickListener {
+                            charactersAdapter.refresh()
+                        }
+                        FLIPPER_CHILD_ERROR
+                    }
                 }
             }
         }
